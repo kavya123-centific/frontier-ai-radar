@@ -18,7 +18,8 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API_URL = "http://localhost:8000"
+import os
+API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 st.set_page_config(
     page_title="🛰 Frontier AI Radar",
@@ -834,3 +835,4 @@ elif page == "📅 Schedule":
     st.write(f"**LLM Provider:** {llm}")
     st.write(f"**SMTP_EMAIL:** {'✅' if _os.getenv('SMTP_EMAIL') else '❌ Not set'}")
     st.write(f"**SMTP_PASSWORD:** {'✅' if _os.getenv('SMTP_PASSWORD') else '❌ Not set'}")
+
