@@ -1,0 +1,124 @@
+global:
+  run_time: "07:00"
+  timezone: "Asia/Kolkata"
+  max_pages_per_domain: 10
+  default_rate_limit: 1.5
+  max_concurrent_requests: 3
+  agent_timeout: 120
+  email_recipients:
+    - "bandla.kavya@centific.com"
+
+agents:
+  competitors:
+    - name: "OpenAI"
+      release_urls:
+        - "https://venturebeat.com/category/ai/"
+      keywords: ["release", "update", "launch", "GA", "beta"]
+
+    - name: "Google DeepMind"
+      release_urls:
+        - "https://deepmind.google/blog/"
+      keywords: ["model", "research", "release", "gemini"]
+
+    - name: "Mistral"
+      release_urls:
+        - "https://mistral.ai/news"
+      keywords: ["model", "release", "API"]
+
+    - name: "Meta AI"
+      release_urls:
+        - "https://ai.meta.com/blog/"
+      keywords: ["llama", "release", "model"]
+
+    - name: "xAI"
+      release_urls:
+        - "https://x.ai/news"
+      keywords: ["grok", "release", "model"]
+
+    - name: "Cohere"
+      release_urls:
+        - "https://cohere.com/blog"
+      keywords: ["command", "release", "enterprise", "API"]
+
+    - name: "The Verge AI"
+      release_urls:
+        - "https://www.theverge.com/ai-artificial-intelligence"
+      keywords: ["model", "release", "launch", "AI"]
+
+    - name: "TechCrunch AI"
+      release_urls:
+        - "https://techcrunch.com/category/artificial-intelligence/"
+      keywords: ["model", "funding", "launch", "startup"]
+
+  model_providers:
+    - name: "Anthropic"
+      urls:
+        - "https://www.anthropic.com/news"
+
+    - name: "Cohere"
+      urls:
+        - "https://cohere.com/blog"
+
+    - name: "Together AI"
+      urls:
+        - "https://www.together.ai/blog"
+
+    - name: "Groq"
+      urls:
+        - "https://groq.com/blog/"
+
+    - name: "Fireworks AI"
+      urls:
+        - "https://fireworks.ai/blog"
+
+    - name: "Mistral"
+      urls:
+        - "https://mistral.ai/news"
+
+    - name: "AWS Machine Learning"
+      urls:
+        - "https://aws.amazon.com/blogs/machine-learning/"
+
+    - name: "Google AI"
+      urls:
+        - "https://blog.google/technology/ai/"
+
+  research:
+    arxiv_categories:
+      - "cs.CL"
+      - "cs.AI"
+      - "cs.LG"
+      - "cs.CV"       # Computer Vision — multimodal models
+      - "stat.ML"     # Statistical Machine Learning
+    max_papers: 20
+    relevance_keywords:
+      - "benchmark"
+      - "evaluation"
+      - "safety"
+      - "alignment"
+      - "agent"
+      - "multimodal"
+      - "reasoning"
+      - "fine-tuning"
+      - "RLHF"
+      - "chain-of-thought"
+      - "RAG"
+      - "retrieval"
+      - "inference"
+      - "quantization"
+
+  hf_benchmarks:
+    leaderboards:
+      - "https://huggingface.co/blog"
+      - "https://huggingface.co/papers"
+    track_models:
+      - "llama"
+      - "mistral"
+      - "gemma"
+      - "phi"
+      - "qwen"
+      - "deepseek"
+      - "claude"
+      - "gpt"
+      - "falcon"
+      - "command"

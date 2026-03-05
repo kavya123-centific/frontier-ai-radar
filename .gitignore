@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# Database — never commit the DB
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment — never commit secrets
+.env
+backend/.env
+.streamlit/secrets.toml
+
+# Digests — generated files
+backend/digests/
+digests/
+*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

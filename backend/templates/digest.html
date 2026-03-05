@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Frontier AI Radar — {{ date }}</title>
+</head>
+<body>
+
+<!-- ═══════════════════════ COVER PAGE ════════════════════════════════════ -->
+<div class="cover">
+  <h1>🛰 Frontier AI Radar</h1>
+  <p class="subtitle">{{ date }}</p>
+  {% if has_findings %}
+  <p class="subtitle">
+    <strong>{{ total }}</strong> intelligence signals tracked
+    across <strong>{{ by_category|length }}</strong> categories
+  </p>
+  {% else %}
+  <p class="subtitle">No new signals detected today</p>
+  {% endif %}
+  <br><br>
+  <span class="badge">DAILY INTELLIGENCE DIGEST</span>
+  <br><br><br>
+  <p style="color:#9ca3af; font-size: 9pt;">
+    Powered by Claude AI · Automated Multi-Agent Intelligence System<br>
+    Generated: {{ run_date }}
+  </p>
+</div>
+
+{% if not has_findings %}
+<!-- ═══════════════════════ EMPTY STATE ═══════════════════════════════════ -->
+<div class="empty-notice">
+  <p>📭 No new intelligence signals detected in this run.</p>
+  <p style="font-size:11pt; color:#9ca3af;">
+    All sources returned either unchanged content or no relevant AI/ML intelligence.
+  </p>
+</div>
+
+{% else %}
+
+<!-- ═══════════════════ EXECUTIVE SUMMARY ═════════════════════════════════ -->
+<h1>📋 Executive Summary</h1>
+<p style="color:#6b7280; font-size:9pt; margin-top:-6px;">
+  Top {{ top5|length }} signals ranked by impact × novelty × credibility × actionability
+</p>
+
+{% for f in top5 %}
+<div class="exec-item">
+  <strong>{{ loop.index }}. {{ f.title }}</strong><br>
+  <span style="color:#374151;">{{ f.summary }}</span><br>
+  <span class="meta">
+    📎 <a href="{{ f.source_url }}">{{ f.source_url[:80] }}</a>
+    &nbsp;·&nbsp;
+    Score: <span class="score">{{ f.final_score }}</span>
+    &nbsp;·&nbsp;
+    <span style="text-transform:uppercase; font-size:7.5pt;">{{ f.category }}</span>
+  </span>
+</div>
+{% endfor %}
+
+
+<!-- ════════════════ DEEP DIVES BY SECTION ════════════════════════════════ -->
+{% for cat, items in by_category.items() %}
+<div class="page-break"></div>
+
+<h2>{{ category_labels.get(cat, cat|title) }}</h2>
+<p style="color:#9ca3af; font-size:8.5pt; margin-top:-4px;">
+  {{ items|length }} signal{% if items|length != 1 %}s{% endif %} in this category
+</p>
+
+{% for f in items %}
+<div class="finding">
+  <h3>
+    {{ f.title }}
+    <span class="badge-cat">{{ f.category }}</span>
+    <span class="score"> ★ {{ f.final_score }}</span>
+  </h3>
+
+  <p style="margin: 6px 0;">{{ f.summary }}</p>
+
+  {% if f.why_matters %}
+  <div class="why">💡 Why it matters: {{ f.why_matters }}</div>
+  {% endif %}
+
+  <div class="meta">
+    🔗 <a href="{{ f.source_url }}">{{ f.source_url[:90] }}</a>
+    {% if f.publisher and f.publisher != 'Unknown' %}
+      &nbsp;·&nbsp; 🏢 {{ f.publisher }}
+    {% endif %}
+    {% if f.tags %}
+      &nbsp;·&nbsp; 🏷 {{ f.tags|join(', ') }}
+    {% endif %}
+    {% if f.entities %}
+      &nbsp;·&nbsp; Entities: {{ f.entities[:4]|join(', ') }}
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+
+{% endfor %}
+
+
+<!-- ═══════════════════ APPENDIX: ALL SIGNALS ════════════════════════════ -->
+<div class="page-break"></div>
+<h2>🔗 Appendix — All {{ findings|length }} Signals This Run</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Title</th>
+      <th>Category</th>
+      <th>Publisher</th>
+      <th>Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in findings %}
+    <tr>
+      <td style="color:#9ca3af;">{{ loop.index }}</td>
+      <td><a href="{{ f.source_url }}">{{ f.title[:65] }}{% if f.title|length > 65 %}…{% endif %}</a></td>
+      <td>{{ f.category }}</td>
+      <td>{{ f.publisher or '—' }}</td>
+      <td><strong class="score">{{ f.final_score }}</strong></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endif %}
+
+<p style="color:#d1d5db; font-size:7.5pt; margin-top:40px; text-align:center;">
+  Frontier AI Radar v3.0 · {{ date }} · Powered by Claude AI · Internal Use Only
+</p>
+
+</body>
+</html>
