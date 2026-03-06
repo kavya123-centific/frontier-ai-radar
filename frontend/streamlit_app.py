@@ -21,7 +21,8 @@ import streamlit as st
 import os
 # On Streamlit Cloud: set BACKEND_URL in app secrets
 # Locally: defaults to localhost:8000
-API_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
+# API_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
+API_URL = st.secrets.get("BACKEND_URL", "http://localhost:8000").rstrip("/")
 
 st.set_page_config(
     page_title="🛰 Frontier AI Radar",
@@ -1001,6 +1002,6 @@ elif page == "📅 Schedule":
     st.markdown("---")
     st.subheader("🔗 Quick Links")
     q1, q2, q3 = st.columns(3)
-    q1.markdown("[📡 API Docs](http://localhost:8000/docs)")
-    q2.markdown("[🗄 DB Explorer](http://localhost:8000/admin/db)")
-    q3.markdown("[📊 Metrics JSON](http://localhost:8000/metrics)")
+    q1.markdown(f"[📡 API Docs]({API_URL}/docs)")
+    q2.markdown(f"[🗄 DB Explorer]({API_URL}/admin/db)")
+    q3.markdown(f"[📊 Metrics JSON]({API_URL}/metrics)")
