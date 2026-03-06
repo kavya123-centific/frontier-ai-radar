@@ -1,7 +1,7 @@
 """
-main.py 
+main.py
 --------------
-ADDITIONS:
+v4.1 ADDITIONS:
   GET /api/entity-trends/{run_id}  — entity mention deltas vs prior run
   GET /api/sota-watch/{run_id}     — benchmark leaderboard movements
   POST /api/runs/recover           — manual stale-run recovery (for ops)
@@ -26,7 +26,7 @@ from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
     AgentMetric, ChangeDetectionOut, FindingOut, MetricsOut,
-    RunOut, SnapshotOut, SourceIn, SourceOut,EmailTestIn, EmailRecipientIn, EmailRecipientOut
+    RunOut, SnapshotOut, SourceIn, SourceOut,
 )
 
 load_dotenv()
@@ -219,6 +219,12 @@ def source_history(source_id: int, limit: int = 10, db: Session = Depends(get_db
 
 
 # ── ANALYTICS ─────────────────────────────────────────────────────────────
+
+@app.get("/api/pipeline-status", summary="Live pipeline stage progress")
+def pipeline_status_endpoint():
+    """Returns live pipeline stage and progress % for dashboard polling."""
+    return PIPELINE_STATE
+
 
 @app.get("/api/status")
 def get_status(db: Session = Depends(get_db)):
