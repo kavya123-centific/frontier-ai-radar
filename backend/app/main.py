@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine
 from .models import Finding, Run, Snapshot, Source, EmailRecipient
-from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline
+from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline,PIPELINE_STATE
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
     AgentMetric, ChangeDetectionOut, FindingOut, MetricsOut,
