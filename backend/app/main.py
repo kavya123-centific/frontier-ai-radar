@@ -22,14 +22,12 @@ from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine
 from .models import Finding, Run, Snapshot, Source, EmailRecipient
-from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline, PIPELINE_STATE,PIPELINE_STATE
+from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline, PIPELINE_STATE
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
     AgentMetric, ChangeDetectionOut, FindingOut, MetricsOut,
-    RunOut, SnapshotOut, SourceIn, SourceOut,EmailRecipientIn, EmailRecipientOut, EmailTestIn
+    RunOut, SnapshotOut, SourceIn, SourceOut, EmailRecipientIn, EmailRecipientOut, EmailTestIn
 )
-from .database import engine
-from .models import Base
 load_dotenv()
 
 logging.basicConfig(
@@ -45,7 +43,7 @@ Base.metadata.create_all(bind=engine)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    On startup, auto-recover any stale 'running' runs before
+    v4.1: On startup, auto-recover any stale 'running' runs before
     starting the scheduler. This ensures the system is never stuck in
     perpetual 409 after a crash or restart.
     """
@@ -65,7 +63,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Frontier AI Radar",
-    description="Daily multi-agent AI intelligence system",
+    description="Daily multi-agent AI intelligence system — v4.1",
     version="4.1.0",
     lifespan=lifespan,
 )
