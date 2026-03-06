@@ -22,12 +22,14 @@ from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine
 from .models import Finding, Run, Snapshot, Source, EmailRecipient
-from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline, PIPELINE_STATE
+from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline,PIPELINE_STATE
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
     AgentMetric, ChangeDetectionOut, FindingOut, MetricsOut,
-    RunOut, SnapshotOut, SourceIn, SourceOut, EmailRecipientIn, EmailRecipientOut, EmailTestIn
+    RunOut, SnapshotOut, SourceIn, SourceOut,EmailRecipientIn, EmailRecipientOut, EmailTestIn
 )
+from .database import engine
+from .models import Base
 load_dotenv()
 
 logging.basicConfig(
@@ -791,6 +793,35 @@ def db_schema(db: Session = Depends(get_db)):
         "snapshots": {"rows": db.query(Snapshot).count(),
                       "columns": [c.name for c in Snapshot.__table__.columns]},
     }
+
+
+
+@app.post("/api/admin/reset-db", summary="Wipe all data (internal use only)",
+          include_in_schema=False)
+def reset_database(db: Session = Depends(get_db)):
+    """
+    Deletes all rows from findings, runs, sources, snapshots, email_recipients.
+    Recreates tables fresh. Does NOT drop schema — migrations stay intact.
+    Hidden from /docs (include_in_schema=False).
+    """
+    try:
+        from .models import Finding, Run, Snapshot, Source, EmailRecipient
+        db.query(Finding).delete()
+        db.query(Run).delete()
+        db.query(Snapshot).delete()
+        db.query(Source).delete()
+        db.query(EmailRecipient).delete()
+        db.commit()
+        # Reset pipeline state too
+        PIPELINE_STATE["stage"]    = "idle"
+        PIPELINE_STATE["progress"] = 0
+        PIPELINE_STATE["detail"]   = ""
+        logger.warning("⚠️ Database reset via /api/admin/reset-db")
+        return {"status": "ok", "message": "All data wiped. Fresh start ready."}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"DB reset failed: {e}")
+        raise HTTPException(500, f"Reset failed: {e}")
 
 
 @app.get("/health")
