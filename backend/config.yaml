@@ -13,32 +13,65 @@ agents:
     - name: "OpenAI"
       release_urls:
         - "https://venturebeat.com/category/ai/"
+        - "https://openai.com/news/"
+        - "https://openai.com/research/"
       keywords: ["release", "update", "launch", "GA", "beta"]
 
     - name: "Google DeepMind"
       release_urls:
         - "https://deepmind.google/blog/"
+        - "https://blog.google/technology/ai/"
+        - "https://ai.google/research/pubs/"
       keywords: ["model", "research", "release", "gemini"]
 
     - name: "Mistral"
       release_urls:
         - "https://mistral.ai/news"
+        - "https://huggingface.co/mistralai"
       keywords: ["model", "release", "API"]
 
     - name: "Meta AI"
       release_urls:
         - "https://ai.meta.com/blog/"
+        - "https://engineering.fb.com/category/ml-applications/"
+        - "https://huggingface.co/meta-llama"
       keywords: ["llama", "release", "model"]
 
     - name: "xAI"
       release_urls:
         - "https://x.ai/news"
+        - "https://huggingface.co/xai-org"
       keywords: ["grok", "release", "model"]
 
     - name: "Cohere"
       release_urls:
         - "https://cohere.com/blog"
+        - "https://huggingface.co/CohereForAI"
       keywords: ["command", "release", "enterprise", "API"]
+
+    - name: "Microsoft AI"
+      release_urls:
+        - "https://blogs.microsoft.com/ai/"
+        - "https://techcommunity.microsoft.com/category/ai"
+      keywords: ["copilot", "model", "release", "azure", "phi"]
+
+    - name: "Apple AI"
+      release_urls:
+        - "https://machinelearning.apple.com/"
+        - "https://developer.apple.com/news/"
+      keywords: ["release", "model", "intelligence", "on-device"]
+
+    - name: "NVIDIA AI"
+      release_urls:
+        - "https://blogs.nvidia.com/blog/category/ai/"
+        - "https://developer.nvidia.com/blog/"
+      keywords: ["nim", "model", "release", "inference", "gpu"]
+
+    - name: "Stability AI"
+      release_urls:
+        - "https://stability.ai/news"
+        - "https://huggingface.co/stabilityai"
+      keywords: ["stable", "release", "model", "diffusion"]
 
     - name: "The Verge AI"
       release_urls:
@@ -50,10 +83,31 @@ agents:
         - "https://techcrunch.com/category/artificial-intelligence/"
       keywords: ["model", "funding", "launch", "startup"]
 
+    - name: "Ars Technica AI"
+      release_urls:
+        - "https://arstechnica.com/ai/"
+      keywords: ["model", "release", "research", "AI"]
+
+    - name: "Wired AI"
+      release_urls:
+        - "https://www.wired.com/tag/artificial-intelligence/"
+      keywords: ["model", "launch", "AI", "research"]
+
+    - name: "MIT Technology Review AI"
+      release_urls:
+        - "https://www.technologyreview.com/topic/artificial-intelligence/"
+      keywords: ["model", "research", "AI", "release", "benchmark"]
+
+    - name: "IEEE Spectrum AI"
+      release_urls:
+        - "https://spectrum.ieee.org/topic/artificial-intelligence/"
+      keywords: ["model", "research", "AI", "release"]
+
   model_providers:
     - name: "Anthropic"
       urls:
         - "https://www.anthropic.com/news"
+        - "https://www.anthropic.com/research"
 
     - name: "Cohere"
       urls:
@@ -83,14 +137,62 @@ agents:
       urls:
         - "https://blog.google/technology/ai/"
 
+    - name: "Azure AI"
+      urls:
+        - "https://techcommunity.microsoft.com/category/azure-ai-services"
+        - "https://azure.microsoft.com/en-us/blog/tag/ai/"
+
+    - name: "Replicate"
+      urls:
+        - "https://replicate.com/blog"
+
+    - name: "Perplexity AI"
+      urls:
+        - "https://blog.perplexity.ai/"
+
+    - name: "Hugging Face"
+      urls:
+        - "https://huggingface.co/blog"
+
+    - name: "Modal"
+      urls:
+        - "https://modal.com/blog"
+
+    - name: "Deepinfra"
+      urls:
+        - "https://deepinfra.com/blog"
+
+    - name: "Cerebras"
+      urls:
+        - "https://cerebras.ai/blog/"
+
+    - name: "AI21 Labs"
+      urls:
+        - "https://www.ai21.com/blog"
+
+    - name: "Nvidia NIM"
+      urls:
+        - "https://blogs.nvidia.com/blog/category/ai/"
+
   research:
     arxiv_categories:
       - "cs.CL"
       - "cs.AI"
       - "cs.LG"
-      - "cs.CV"       # Computer Vision — multimodal models
-      - "stat.ML"     # Statistical Machine Learning
+      - "cs.CV"
+      - "cs.IR"       # Information Retrieval — RAG, search
+      - "cs.NE"       # Neural & Evolutionary Computing
+      - "cs.RO"       # Robotics — embodied AI agents
+      - "stat.ML"
     max_papers: 20
+    additional_sources:
+      - "https://paperswithcode.com/latest"
+      - "https://paperswithcode.com/methods"
+      - "https://distill.pub/"
+      - "https://research.google/pubs/"
+      - "https://ai.meta.com/research/publications/"
+      - "https://openai.com/research/"
+      - "https://www.semanticscholar.org/search?q=large+language+model&sort=Relevance"
     relevance_keywords:
       - "benchmark"
       - "evaluation"
@@ -106,11 +208,29 @@ agents:
       - "retrieval"
       - "inference"
       - "quantization"
+      - "hallucination"
+      - "instruction tuning"
+      - "long context"
+      - "tool use"
+      - "function calling"
+      - "mixture of experts"
+      - "sparse attention"
+      - "distillation"
 
   hf_benchmarks:
     leaderboards:
       - "https://huggingface.co/blog"
       - "https://huggingface.co/papers"
+      - "https://huggingface.co/spaces/lmsys/chatbot-arena-leaderboard"
+      - "https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard"
+      - "https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard"
+      - "https://huggingface.co/spaces/allenai/WildBench"
+      - "https://huggingface.co/spaces/livebench/leaderboard"
+    external_benchmarks:
+      - "https://scale.com/leaderboard"
+      - "https://lmarena.ai/"
+      - "https://artificialanalysis.ai/leaderboards/models"
+      - "https://evalplus.github.io/leaderboard.html"
     track_models:
       - "llama"
       - "mistral"
@@ -122,3 +242,11 @@ agents:
       - "gpt"
       - "falcon"
       - "command"
+      - "gemini"
+      - "titan"
+      - "mixtral"
+      - "yi"
+      - "solar"
+      - "aya"
+      - "granite"
+      - "nemotron"
