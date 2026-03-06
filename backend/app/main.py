@@ -26,7 +26,7 @@ from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
     AgentMetric, ChangeDetectionOut, FindingOut, MetricsOut,
-    RunOut, SnapshotOut, SourceIn, SourceOut,
+    RunOut, SnapshotOut, SourceIn, SourceOut,EmailTestIn, EmailRecipientIn, EmailRecipientOut
 )
 
 load_dotenv()
