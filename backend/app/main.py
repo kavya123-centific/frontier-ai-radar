@@ -1,5 +1,5 @@
 """
-main.py
+main.py 
 --------------
 ADDITIONS:
   GET /api/entity-trends/{run_id}  — entity mention deltas vs prior run
@@ -26,7 +26,7 @@ from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
     AgentMetric, ChangeDetectionOut, FindingOut, MetricsOut,
-    RunOut, SnapshotOut, SourceIn, SourceOut,EmailRecipientOut, EmailRecipientIn, EmailTestIn
+    RunOut, SnapshotOut, SourceIn, SourceOut,
 )
 
 load_dotenv()
@@ -71,11 +71,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8501",
-        "http://127.0.0.1:8501",
-        "http://0.0.0.0:8501",
-    ],
+    allow_origins=["*"],  # Render + Streamlit Cloud + localhost
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -797,10 +793,10 @@ def health():
     return {"status": "ok", "service": "Frontier AI Radar", "version": "4.1.0"}
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
-        "service": "Frontier AI Radar API v4.1",
+        "service": "Frontier AI Radar API v4.2",
         "docs":    "/docs",
         "health":  "/health",
         "status":  "/api/status",

@@ -18,7 +18,10 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API_URL = "http://localhost:8000"
+import os
+# On Streamlit Cloud: set BACKEND_URL in app secrets
+# Locally: defaults to localhost:8000
+API_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
 
 st.set_page_config(
     page_title="🛰 Frontier AI Radar",
