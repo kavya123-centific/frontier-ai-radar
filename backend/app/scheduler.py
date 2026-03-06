@@ -34,7 +34,18 @@ _scheduler = None
 
 def load_schedule_config():
     """Load run_time and timezone from config.yaml."""
-    config_path = os.getenv("CONFIG_PATH", "config.yaml")
+    # Try multiple locations: env var → cwd → backend dir → script dir
+    config_path = os.getenv("CONFIG_PATH", "")
+    if not config_path or not os.path.exists(config_path):
+        for candidate in ["config.yaml", "backend/config.yaml",
+                          os.path.join(os.path.dirname(__file__), "..", "config.yaml"),
+                          os.path.join(os.path.dirname(__file__), "../../config.yaml")]:
+            if os.path.exists(candidate):
+                config_path = candidate
+                break
+        else:
+            config_path = "config.yaml"  # final fallback
+
     try:
         with open(config_path) as f:
             cfg = yaml.safe_load(f)

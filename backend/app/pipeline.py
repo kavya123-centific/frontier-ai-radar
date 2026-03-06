@@ -2,7 +2,6 @@
 pipeline.py
 ------------------
 Core intelligence pipeline.
-
 ADDITIONS:
   1. Stale-run auto-recovery on startup:
      Any run stuck in 'running' state from a prior crash is automatically
@@ -15,7 +14,7 @@ ADDITIONS:
   4. Per-category finding counts logged + stored on Run.
   5. Snapshot persist is now wrapped per-finding (never blocks on failure).
 
-All features retained.
+All v4.0 features retained.
 """
 
 import asyncio
@@ -49,7 +48,16 @@ STALE_RUN_CUTOFF = 30   # Minutes: runs older than this that are still 'running'
 # ── Config ─────────────────────────────────────────────────────────────────
 
 def load_config() -> Dict:
-    config_path = os.getenv("CONFIG_PATH", "config.yaml")
+    config_path = os.getenv("CONFIG_PATH", "")
+    if not config_path or not os.path.exists(config_path):
+        for candidate in ["config.yaml", "backend/config.yaml",
+                          os.path.join(os.path.dirname(__file__), "..", "config.yaml"),
+                          os.path.join(os.path.dirname(__file__), "../../config.yaml")]:
+            if os.path.exists(candidate):
+                config_path = candidate
+                break
+        else:
+            config_path = "config.yaml"
     with open(config_path) as f:
         return yaml.safe_load(f)
 
