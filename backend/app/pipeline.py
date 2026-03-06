@@ -14,7 +14,6 @@ ADDITIONS:
      benchmark leaderboard movements.
   4. Per-category finding counts logged + stored on Run.
   5. Snapshot persist is now wrapped per-finding (never blocks on failure).
-
 All v4.0 features retained.
 """
 
