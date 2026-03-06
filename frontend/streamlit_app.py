@@ -18,15 +18,32 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Inject JS to prevent sidebar collapse on load
+st.markdown("""
+<script>
+window.addEventListener('load', function() {
+    const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+    if (sidebar) sidebar.setAttribute('aria-expanded', 'true');
+});
+</script>
+""", unsafe_allow_html=True)
+
 # ── Lock sidebar open ─────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-[data-testid="collapsedControl"] { display: none !important; }
+/* Hide ALL collapse/expand controls */
+[data-testid="collapsedControl"]          { display: none !important; }
+button[data-testid="baseButton-headerNoPadding"] { display: none !important; }
+
+/* Force sidebar always visible */
+[data-testid="stSidebar"]                 { display: flex !important; visibility: visible !important; }
 [data-testid="stSidebar"][aria-expanded="false"] {
     display: flex !important;
-    min-width: 240px !important;
-    width: 240px !important;
+    min-width: 244px !important;
+    width: 244px !important;
+    transform: none !important;
 }
+section[data-testid="stSidebar"] > div   { width: 244px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -289,7 +306,7 @@ if page == "📊 Dashboard":
     c1.metric("Signals Detected",   status.get("total_findings", 0))
     c2.metric("Runs Completed",     status.get("completed_runs", 0))
     c3.metric("Sources Monitored",  len(api_get("/api/sources")))
-    c4.metric("Pipeline Status",    "🟢 Running" if status.get("is_running") else "⚪ Idle")
+    c4.metric("Pipeline Status",    "▶ Running" if status.get("is_running") else "● Idle")
 
     # Live pipeline progress
     if status.get("is_running"):
