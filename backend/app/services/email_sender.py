@@ -31,6 +31,7 @@ import logging
 import os
 import smtplib
 from email.message import EmailMessage
+from turtle import st
 from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -277,8 +278,11 @@ def send_digest_email(
     html_body  = _build_html_body(top_findings)
 
     # ── Provider 1: Resend API ─────────────────────────────────────────────
-    resend_key  = os.getenv("RESEND_API_KEY", "").strip()
-    resend_from = os.getenv("RESEND_FROM", "AI Radar <onboarding@resend.dev>").strip()
+    # resend_key  = os.getenv("RESEND_API_KEY", "").strip()
+    # resend_from = os.getenv("RESEND_FROM", "AI Radar <onboarding@resend.dev>").strip()
+    
+    resend_key = st.secrets.get("RESEND_API_KEY", "").strip()
+    resend_from = st.secrets.get("RESEND_FROM", "AI Radar <onboarding@resend.dev>").strip()
 
     if resend_key and resend_key not in _PLACEHOLDERS:
         logger.info("Email: using Resend API")

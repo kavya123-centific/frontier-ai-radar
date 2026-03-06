@@ -18,32 +18,32 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Inject JS to prevent sidebar collapse on load
-st.markdown("""
-<script>
-window.addEventListener('load', function() {
-    const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
-    if (sidebar) sidebar.setAttribute('aria-expanded', 'true');
-});
-</script>
-""", unsafe_allow_html=True)
-
-# ── Lock sidebar open ─────────────────────────────────────────────────────────
+# ── Sidebar: always open, correct width, no collapse arrow ───────────────────
 st.markdown("""
 <style>
-/* Hide ALL collapse/expand controls */
-[data-testid="collapsedControl"]          { display: none !important; }
-button[data-testid="baseButton-headerNoPadding"] { display: none !important; }
+/* Hide every collapse/expand button variant */
+[data-testid="collapsedControl"],
+button[data-testid="baseButton-headerNoPadding"],
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
-/* Force sidebar always visible */
-[data-testid="stSidebar"]                 { display: flex !important; visibility: visible !important; }
-[data-testid="stSidebar"][aria-expanded="false"] {
-    display: flex !important;
-    min-width: 244px !important;
-    width: 244px !important;
+/* Sidebar container — always 260px, never slides away */
+section[data-testid="stSidebar"],
+[data-testid="stSidebar"] {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
     transform: none !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
-section[data-testid="stSidebar"] > div   { width: 244px !important; }
+
+/* Inner div that Streamlit sometimes shrinks */
+section[data-testid="stSidebar"] > div:first-child {
+    width: 260px !important;
+    min-width: 260px !important;
+    padding-top: 1rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -69,7 +69,13 @@ header    { visibility: hidden; }
     border-right: 1px solid #e5e7eb !important;
 }
 [data-testid="stSidebar"] * { color: #374151 !important; }
-[data-testid="stSidebar"] .stRadio label { font-size: 13px !important; font-weight: 500 !important; }
+[data-testid="stSidebar"] .stRadio label { 
+    font-size: 13px !important; 
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
 
 /* ---------- METRIC CARDS ---------- */
 [data-testid="metric-container"] {
