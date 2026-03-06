@@ -244,6 +244,10 @@ async def summarize_content(
 
         except _PermanentError as e:
             logger.error(f"{provider} permanent error {e.status_code} for {url}: {e.body}")
+            if e.status_code == 401 and "openrouter" in (base_url or "").lower():
+                logger.error(
+                    "OpenRouter 401: check LLM_API_KEY in backend/.env — get a valid key at https://openrouter.ai/keys"
+                )
             return None
 
         except EnvironmentError:

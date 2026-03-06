@@ -10,6 +10,9 @@ build/
 venv/
 .venv/
 env/
+env.example/
+env.example
+
 
 # Database — never commit the DB
 *.db

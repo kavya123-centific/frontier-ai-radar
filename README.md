@@ -11,15 +11,19 @@
 ```bash
 # 1. Install dependencies
 pip install -r backend/requirements.txt
+pip install -r frontend/requirements.txt  # if present; or streamlit
 
 # 2. Configure environment
 copy backend\.env.example backend\.env    # Windows
 cp backend/.env.example backend/.env      # Mac/Linux
-# → edit backend/.env with your API keys
+# → Edit backend/.env: add LLM_API_KEY, RESEND_API_KEY (see .env.example).
+# → BACKEND_URL=http://localhost:8000 is used by the Streamlit UI to call the API.
 
 # 3. Start everything
 python start.py
 ```
+
+**Optional (Streamlit only):** To point the UI at a different API, set `BACKEND_URL` in `backend/.env` or in `.streamlit/secrets.toml` as `BACKEND_URL = "https://your-api.example.com"`.
 
 **That's it.** Opens automatically:
 
