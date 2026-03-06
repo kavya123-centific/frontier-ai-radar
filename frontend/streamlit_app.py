@@ -18,8 +18,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-import os
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+API_URL = "http://localhost:8000"
 
 st.set_page_config(
     page_title="🛰 Frontier AI Radar",
@@ -43,8 +42,8 @@ st.markdown("""
 
 # ── Sidebar ────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("🛰 Frontier AI Radar")
-    st.caption("Daily Intelligence System")
+    st.markdown("## 🛰 Frontier AI Radar")
+    st.caption("v4.1 — Daily Intelligence System")
     st.markdown("---")
 
     page = st.radio(
@@ -60,6 +59,7 @@ with st.sidebar:
             "📁 Run History",
             "📅 Schedule",
         "📚 Digest Archive",
+        "📧 Email Recipients",
         ],
         label_visibility="collapsed",
     )
@@ -791,6 +791,155 @@ elif page == "📚 Digest Archive":
                     st.caption("No findings for this run.")
 
 
+elif page == "📧 Email Recipients":
+    st.title("📧 Email Recipients")
+    st.caption("Manage who receives the daily AI Radar digest — spec FR6")
+
+    # ── Resend info banner ────────────────────────────────────────────────
+    st.info(
+        "📬 **No DNS verification needed.**  "
+        "Frontier AI Radar uses Resend's shared domain (`onboarding@resend.dev`).  "
+        "Just add your `RESEND_API_KEY` to `.env` — emails work immediately on any network."
+    )
+
+    # ── Current recipients ────────────────────────────────────────────────
+    st.subheader("📋 Current Recipients")
+    recipients = api_get("/api/email-recipients") or []
+
+    if not recipients:
+        st.warning("No recipients configured yet. Add one below.")
+    else:
+        active   = [r for r in recipients if r.get("is_active", 1)]
+        inactive = [r for r in recipients if not r.get("is_active", 1)]
+        st.caption(f"{len(active)} active · {len(inactive)} paused · {len(recipients)} total")
+
+        for rec in recipients:
+            rid      = rec.get("id")
+            email    = rec.get("email", "")
+            name     = rec.get("name") or ""
+            note     = rec.get("note") or ""
+            active   = rec.get("is_active", 1)
+            status   = "✅ Active" if active else "⏸ Paused"
+            label    = f"{status}  ·  **{email}**" + (f"  ·  {name}" if name else "")
+
+            with st.expander(label, expanded=False):
+                c1, c2, c3, c4 = st.columns([3, 2, 1, 1])
+                c1.write(f"**Email:** {email}")
+                c2.write(f"**Name:** {name or '—'}")
+                if note:
+                    st.caption(f"Note: {note}")
+
+                # Toggle active
+                toggle_label = "⏸ Pause" if active else "▶️ Activate"
+                if c3.button(toggle_label, key=f"tog_{rid}"):
+                    try:
+                        r = requests.patch(f"{API_URL}/api/email-recipients/{rid}/toggle", timeout=5)
+                        if r.status_code == 200:
+                            st.success(f"{'Paused' if active else 'Activated'}: {email}")
+                            st.rerun()
+                        else:
+                            st.error(r.json().get("detail", "Failed"))
+                    except Exception as e:
+                        st.error(str(e))
+
+                # Delete
+                if c4.button("🗑 Remove", key=f"del_{rid}"):
+                    try:
+                        r = requests.delete(f"{API_URL}/api/email-recipients/{rid}", timeout=5)
+                        if r.status_code == 200:
+                            st.success(f"Removed: {email}")
+                            st.rerun()
+                        else:
+                            st.error(r.json().get("detail", "Failed"))
+                    except Exception as e:
+                        st.error(str(e))
+
+    st.markdown("---")
+
+    # ── Add new recipient ─────────────────────────────────────────────────
+    st.subheader("➕ Add Recipient")
+    with st.container():
+        a1, a2, a3 = st.columns([3, 2, 2])
+        new_email = a1.text_input("Email address *", placeholder="researcher@company.com", key="new_email")
+        new_name  = a2.text_input("Name (optional)", placeholder="Dr. Smith", key="new_name")
+        new_note  = a3.text_input("Note (optional)", placeholder="Research team lead", key="new_note")
+
+        if st.button("➕ Add to List", type="primary"):
+            if not new_email or "@" not in new_email:
+                st.error("Please enter a valid email address.")
+            else:
+                try:
+                    r = requests.post(
+                        f"{API_URL}/api/email-recipients",
+                        json={"email": new_email, "name": new_name or None, "note": new_note or None},
+                        timeout=5,
+                    )
+                    if r.status_code == 200:
+                        st.success(f"✅ Added: {new_email}")
+                        st.rerun()
+                    elif r.status_code == 409:
+                        st.warning(f"{new_email} is already in the list.")
+                    else:
+                        st.error(r.json().get("detail", "Failed to add recipient"))
+                except Exception as e:
+                    st.error(str(e))
+
+    st.markdown("---")
+
+    # ── Send test email ───────────────────────────────────────────────────
+    st.subheader("🧪 Send Test Email")
+    st.caption("Verify your Resend integration is working — sends immediately, no pipeline run needed")
+
+    t1, t2 = st.columns([4, 1])
+    test_addr = t1.text_input("Send test to", placeholder="your-email@gmail.com", key="test_email")
+    if t2.button("📤 Send Test", type="secondary"):
+        if not test_addr or "@" not in test_addr:
+            st.error("Enter a valid email address")
+        else:
+            with st.spinner("Sending..."):
+                try:
+                    r = requests.post(
+                        f"{API_URL}/api/email-recipients/test",
+                        json={"email": test_addr},
+                        timeout=15,
+                    )
+                    if r.status_code == 200:
+                        result = r.json()
+                        st.success(f"✅ Test email sent to **{test_addr}** via {result.get('provider', 'Resend')}")
+                        st.caption("Check your inbox (and spam folder) — arrives within 30 seconds.")
+                    else:
+                        detail = r.json().get("detail", "Unknown error")
+                        st.error(f"❌ Failed: {detail}")
+                        st.caption("Make sure RESEND_API_KEY is set in backend/.env")
+                except Exception as e:
+                    st.error(f"Connection error: {e}")
+
+    st.markdown("---")
+
+    # ── How it works ─────────────────────────────────────────────────────
+    with st.expander("ℹ️ How email delivery works"):
+        st.markdown("""
+**Provider:** Resend API (port 443 — works on all networks including corporate)
+
+**No DNS setup required** — emails are sent from `onboarding@resend.dev` (Resend's pre-verified shared domain).
+You only need to verify your own domain if you want to send from your own `@yourcompany.com` address.
+
+**Priority:** Recipients added here (DB) take priority over `config.yaml` email_recipients.
+If no recipients are in the DB, the system falls back to `config.yaml`.
+
+**Get your free Resend API key:**
+1. Go to [resend.com](https://resend.com) → Sign up with Google (30 seconds)
+2. Dashboard → API Keys → Create key
+3. Add to `backend/.env`:
+```
+RESEND_API_KEY=re_your_actual_key_here
+```
+4. Use the test button above to verify it works.
+
+**Free tier:** 100 emails/day · 3,000 emails/month
+        """)
+
+
 elif page == "📅 Schedule":
     st.title("📅 Scheduler")
     status = api_get("/api/status")
@@ -823,16 +972,32 @@ elif page == "📅 Schedule":
         "  run_time: '07:00'\n  timezone: 'UTC'\n```\nRestart API to apply."
     )
 
-    st.subheader("🔑 Status")
-    import os as _os
-    if _os.getenv("LLM_BASE_URL"):
-        llm = f"✅ {_os.getenv('LLM_BASE_URL','').split('/')[2]} / {_os.getenv('LLM_MODEL','')}"
-    elif _os.getenv("ANTHROPIC_API_KEY"):
-        llm = "✅ Anthropic (native)"
-    else:
-        llm = "❌ Not configured"
+    st.subheader("🔑 Configuration Status")
+    st.caption("Read from backend — accurate regardless of where keys are stored")
 
-    st.write(f"**LLM Provider:** {llm}")
-    st.write(f"**SMTP_EMAIL:** {'✅' if _os.getenv('SMTP_EMAIL') else '❌ Not set'}")
-    st.write(f"**SMTP_PASSWORD:** {'✅' if _os.getenv('SMTP_PASSWORD') else '❌ Not set'}")
+    # Read from /api/status — backend reads its own env, not the frontend's
+    llm_status        = status.get("llm_status", "❌ Not configured")
+    email_status      = status.get("email_status", "❌ Not configured")
+    active_recipients = status.get("active_recipients", 0)
 
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("**🤖 LLM Provider**")
+        st.write(llm_status)
+        st.markdown("**📧 Email Provider**")
+        st.write(email_status)
+    with col_b:
+        st.markdown("**👥 Active Email Recipients**")
+        if active_recipients > 0:
+            st.success(f"✅ {active_recipients} recipient(s) configured")
+            st.caption("Manage in 📧 Email Recipients page")
+        else:
+            st.warning("⚠️ No recipients — add them in 📧 Email Recipients page")
+
+    # Quick links
+    st.markdown("---")
+    st.subheader("🔗 Quick Links")
+    q1, q2, q3 = st.columns(3)
+    q1.markdown("[📡 API Docs](http://localhost:8000/docs)")
+    q2.markdown("[🗄 DB Explorer](http://localhost:8000/admin/db)")
+    q3.markdown("[📊 Metrics JSON](http://localhost:8000/metrics)")

@@ -1,5 +1,5 @@
 """
-main.py 
+main.py
 --------------
 ADDITIONS:
   GET /api/entity-trends/{run_id}  — entity mention deltas vs prior run
@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from .database import Base, SessionLocal, engine
-from .models import Finding, Run, Snapshot, Source
+from .models import Finding, Run, Snapshot, Source, EmailRecipient
 from .pipeline import is_run_in_progress, recover_stale_runs, run_pipeline
 from .scheduler import get_next_run_time, start_scheduler, stop_scheduler
 from .schemas import (
@@ -230,15 +230,53 @@ def get_status(db: Session = Depends(get_db)):
     total_findings = db.query(Finding).count()
     total_runs     = db.query(Run).count()
     completed_runs = db.query(Run).filter(Run.status == "completed").count()
+    # Read config status from backend env — never from frontend os.getenv()
+    _placeholders = {"", "abcd", "abcdefghijklmnop", "your-key", "your-password",
+                     "re_xxxxxxxxxxxx", "xxxx-xxxx-xxxx-xxxx", "your-openrouter-key-here",
+                     "sk-ant-your-key-here"}
+
+    llm_key      = os.getenv("LLM_API_KEY", "").strip()
+    llm_base     = os.getenv("LLM_BASE_URL", "").strip()
+    llm_model    = os.getenv("LLM_MODEL", "").strip()
+    anth_key     = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    resend_key   = os.getenv("RESEND_API_KEY", "").strip()
+    smtp_email   = os.getenv("SMTP_EMAIL", "").strip()
+    smtp_pass    = os.getenv("SMTP_PASSWORD", "").strip()
+
+    if llm_key and llm_key not in _placeholders and llm_base:
+        provider = llm_base.split("/")[2] if "/" in llm_base else llm_base
+        llm_status = f"✅ {provider} / {llm_model}"
+    elif anth_key and anth_key not in _placeholders:
+        llm_status = "✅ Anthropic (native)"
+    else:
+        llm_status = "❌ Not configured"
+
+    if resend_key and resend_key not in _placeholders:
+        email_status = "✅ Resend API"
+    elif smtp_email and smtp_pass and smtp_pass not in _placeholders:
+        email_status = f"✅ SMTP ({smtp_email})"
+    else:
+        email_status = "❌ Not configured"
+
+    # Count active email recipients from DB
+    from .models import EmailRecipient as _ER
+    active_recipients = db.query(_ER).filter(_ER.is_active == 1).count()
+
     return {
-        "service":        "Frontier AI Radar",
-        "version":        "4.1.0",
-        "is_running":     current_run is not None,
-        "current_run_id": current_run.run_id if current_run else None,
-        "next_scheduled": get_next_run_time(),
-        "total_findings": total_findings,
-        "total_runs":     total_runs,
-        "completed_runs": completed_runs,
+        "service":           "Frontier AI Radar",
+        "version":           "4.2.0",
+        "is_running":        current_run is not None,
+        "current_run_id":    current_run.run_id if current_run else None,
+        "next_scheduled":    get_next_run_time(),
+        "total_findings":    total_findings,
+        "total_runs":        total_runs,
+        "completed_runs":    completed_runs,
+        # Config status — read from backend, shown in Schedule page
+        "llm_status":        llm_status,
+        "email_status":      email_status,
+        "active_recipients": active_recipients,
+        "resend_configured": bool(resend_key and resend_key not in _placeholders),
+        "smtp_configured":   bool(smtp_email and smtp_pass and smtp_pass not in _placeholders),
     }
 
 
@@ -401,6 +439,98 @@ def list_snapshots(
     if url:
         q = q.filter(Snapshot.url.ilike(f"%{url}%"))
     return q.limit(limit).all()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# EMAIL RECIPIENTS — Spec FR6: configurable distribution list managed via UI
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/email-recipients", response_model=List[EmailRecipientOut],
+         summary="List all email recipients")
+def list_recipients(db: Session = Depends(get_db)):
+    """Return all configured email recipients (active + inactive)."""
+    return db.query(EmailRecipient).order_by(EmailRecipient.added_at).all()
+
+
+@app.post("/api/email-recipients", response_model=EmailRecipientOut,
+          summary="Add email recipient")
+def add_recipient(body: EmailRecipientIn, db: Session = Depends(get_db)):
+    """Add a new email recipient. Validates email format."""
+    import re
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", body.email.strip()):
+        raise HTTPException(400, "Invalid email address format")
+    existing = db.query(EmailRecipient).filter_by(email=body.email.strip()).first()
+    if existing:
+        raise HTTPException(409, f"Email {body.email} already in recipient list")
+    rec = EmailRecipient(
+        email=body.email.strip(),
+        name=body.name,
+        note=body.note,
+    )
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+    logger.info(f"Email recipient added: {body.email}")
+    return rec
+
+
+@app.patch("/api/email-recipients/{recipient_id}/toggle",
+           summary="Toggle recipient active/inactive")
+def toggle_recipient(recipient_id: int, db: Session = Depends(get_db)):
+    """Activate or deactivate a recipient without deleting them."""
+    rec = db.query(EmailRecipient).filter_by(id=recipient_id).first()
+    if not rec:
+        raise HTTPException(404, "Recipient not found")
+    rec.is_active = 0 if rec.is_active else 1
+    db.commit()
+    action = "activated" if rec.is_active else "deactivated"
+    return {"id": recipient_id, "email": rec.email, "is_active": rec.is_active, "action": action}
+
+
+@app.delete("/api/email-recipients/{recipient_id}",
+            summary="Remove email recipient")
+def delete_recipient(recipient_id: int, db: Session = Depends(get_db)):
+    """Permanently remove a recipient from the list."""
+    rec = db.query(EmailRecipient).filter_by(id=recipient_id).first()
+    if not rec:
+        raise HTTPException(404, "Recipient not found")
+    db.delete(rec)
+    db.commit()
+    logger.info(f"Email recipient removed: {rec.email}")
+    return {"deleted": recipient_id, "email": rec.email}
+
+
+@app.post("/api/email-recipients/test", summary="Send test email to a specific address")
+async def send_test_email(body: EmailTestIn):
+    """
+    Send a test email to verify Resend is working.
+    Does NOT require an active pipeline run — sends immediately.
+    """
+    import re
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", body.email.strip()):
+        raise HTTPException(400, "Invalid email address format")
+
+    from .services.email_sender import send_digest_email
+    test_finding = [{
+        "title": "✅ Frontier AI Radar — Email Test",
+        "summary": "This is a test email confirming your Resend API integration is working correctly. No DNS verification required — uses Resend shared domain.",
+        "why_matters": "Email delivery is configured and operational.",
+        "source_url": "http://localhost:8000/docs",
+        "category": "test",
+        "final_score": 10.0,
+        "confidence_score": 1.0,
+        "topic_cluster": "infrastructure",
+        "evidence": "Sent via Resend API using onboarding@resend.dev shared domain.",
+    }]
+    success = send_digest_email(
+        pdf_path="",
+        top_findings=test_finding,
+        recipients=[body.email.strip()],
+    )
+    if success:
+        return {"status": "sent", "to": body.email, "provider": "Resend API"}
+    else:
+        raise HTTPException(500, "Email send failed — check RESEND_API_KEY in .env")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

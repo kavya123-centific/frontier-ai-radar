@@ -110,3 +110,22 @@ class SnapshotOut(BaseModel):
     agent_type:   Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class EmailRecipientIn(BaseModel):
+    email: str
+    name:  Optional[str] = None
+    note:  Optional[str] = None
+
+class EmailRecipientOut(BaseModel):
+    id:        int
+    email:     str
+    name:      Optional[str] = None
+    note:      Optional[str] = None
+    is_active: int
+    added_at:  Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+class EmailTestIn(BaseModel):
+    email: str   # Send a test email to this address

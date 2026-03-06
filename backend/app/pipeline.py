@@ -1,5 +1,5 @@
 """
-pipeline.py 
+pipeline.py
 ------------------
 Core intelligence pipeline.
 
@@ -14,7 +14,8 @@ ADDITIONS:
      benchmark leaderboard movements.
   4. Per-category finding counts logged + stored on Run.
   5. Snapshot persist is now wrapped per-finding (never blocks on failure).
-All v4.0 features retained.
+
+All features retained.
 """
 
 import asyncio
@@ -456,9 +457,28 @@ async def run_pipeline() -> str:
         generate_pdf(ranked, pdf_path)
 
         # ── Email ──────────────────────────────────────────────────────────
-        recipients = global_cfg.get("email_recipients", [])
+        # FR6: Recipients from DB (UI-managed) take priority over config.yaml
+        from .models import EmailRecipient as _ER
+        db_recipients = [
+            r.email for r in db.query(_ER).filter(_ER.is_active == 1).all()
+        ]
+        # Fallback to config.yaml if DB has none
+        config_recipients = global_cfg.get("email_recipients", [])
+        recipients = db_recipients if db_recipients else config_recipients
+        # Seed config.yaml recipients into DB on first run
+        if config_recipients and not db_recipients:
+            for email in config_recipients:
+                exists = db.query(_ER).filter_by(email=email).first()
+                if not exists:
+                    db.add(_ER(email=email, name="From config.yaml", note="Auto-seeded"))
+            try:
+                db.commit()
+                logger.info(f"Seeded {len(config_recipients)} recipients from config.yaml into DB")
+            except Exception:
+                db.rollback()
         if recipients:
             send_digest_email(pdf_path, ranked[:5], recipients)
+            logger.info(f"Email sent to {len(recipients)} recipient(s): {recipients}")
         else:
             logger.info("No email recipients configured — skipped")
 

@@ -1,7 +1,7 @@
 """
-models.py 
+models.py
 -----------------
-ADDITIONS over :
+ADDITIONS:
   - Run.entity_trends: JSON dict of entity mention deltas vs prior run
   - Run.sota_watch: JSON list of benchmark movements
   - Run.stale_recovered: bool flag if this run auto-recovered prior stale runs
@@ -70,6 +70,21 @@ class Source(Base):
     added_at     = Column(DateTime, default=datetime.utcnow)
     last_seen_at = Column(DateTime, nullable=True)
     last_hash    = Column(String(64), nullable=True)
+
+
+class EmailRecipient(Base):
+    """
+    Email recipients managed via UI — Spec FR6: configurable distribution list.
+    Replaces static config.yaml email_recipients list.
+    """
+    __tablename__ = "email_recipients"
+
+    id        = Column(Integer, primary_key=True)
+    email     = Column(String(200), unique=True, nullable=False, index=True)
+    name      = Column(String(200), nullable=True)
+    is_active = Column(Integer, default=1)
+    added_at  = Column(DateTime, default=datetime.utcnow)
+    note      = Column(String(500), nullable=True)
 
 
 class Snapshot(Base):
