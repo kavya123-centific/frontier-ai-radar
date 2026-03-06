@@ -33,6 +33,9 @@ class FindingOut(BaseModel):
     entities:         Optional[List[str]] = []
     run_id:           Optional[str]   = None
     created_at:       Optional[datetime] = None
+    recommendation:   Optional[str]   = None
+    priority:         Optional[str]   = "medium"
+    impact_horizon:   Optional[str]   = "short-term"
 
     model_config = {"from_attributes": True}
 

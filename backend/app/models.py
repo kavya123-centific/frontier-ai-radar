@@ -39,6 +39,11 @@ class Finding(Base):
     previous_hash    = Column(String(64), nullable=True)
     topic_cluster    = Column(String(100), nullable=True)
 
+    # Strategic Recommendation Engine (v4.3)
+    recommendation   = Column(Text, nullable=True)
+    priority         = Column(String(20), default="medium")
+    impact_horizon   = Column(String(50), default="short-term")
+
 
 class Run(Base):
     __tablename__ = "runs"

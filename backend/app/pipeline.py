@@ -42,6 +42,75 @@ from .services.email_sender import send_digest_email
 
 logger = logging.getLogger(__name__)
 
+# ── Strategic Recommendation Engine (v4.3) ────────────────────────────────
+
+def generate_recommendation(title: str, summary: str, category: str) -> Dict:
+    """
+    Generate LLM-powered strategic recommendation for a finding.
+    Falls back to rule-based recommendations if LLM unavailable.
+    """
+    import os, json
+    llm_key  = os.getenv("LLM_API_KEY", "").strip()
+    llm_base = os.getenv("LLM_BASE_URL", "").strip()
+    llm_model = os.getenv("LLM_MODEL", "").strip()
+
+    if llm_key and llm_base and llm_model:
+        try:
+            import httpx
+            prompt = (
+                f"Signal Title: {title}\n"
+                f"Summary: {summary[:300]}\n"
+                f"Category: {category}\n\n"
+                "You are a strategic AI advisor. Based on this signal, respond ONLY with a JSON object:\n"
+                '{"recommendation": "one concise sentence on what the team should do", '
+                '"priority": "high|medium|low", '
+                '"impact_horizon": "immediate|3-months|1-year"}'
+            )
+            resp = httpx.post(
+                f"{llm_base}/chat/completions",
+                headers={"Authorization": f"Bearer {llm_key}", "Content-Type": "application/json"},
+                json={"model": llm_model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 150},
+                timeout=10.0,
+            )
+            if resp.status_code == 200:
+                text = resp.json()["choices"][0]["message"]["content"].strip()
+                # Strip markdown fences if present
+                text = text.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(text)
+                if "recommendation" in parsed:
+                    return parsed
+        except Exception as e:
+            logger.debug(f"LLM recommendation failed, using rule-based: {e}")
+
+    # Rule-based fallback
+    rules = {
+        "competitors": {
+            "recommendation": "Monitor competitor capabilities closely and evaluate impact on internal roadmap within next sprint.",
+            "priority": "high",
+            "impact_horizon": "immediate",
+        },
+        "model_providers": {
+            "recommendation": "Assess new model capabilities and test integration opportunities for potential adoption.",
+            "priority": "medium",
+            "impact_horizon": "3-months",
+        },
+        "research": {
+            "recommendation": "Review research insights and identify potential technical approaches for future adoption.",
+            "priority": "low",
+            "impact_horizon": "1-year",
+        },
+        "hf_benchmarks": {
+            "recommendation": "Evaluate benchmark results against internal models and update evaluation baselines accordingly.",
+            "priority": "medium",
+            "impact_horizon": "3-months",
+        },
+    }
+    return rules.get(category, {
+        "recommendation": "Review this signal for strategic implications and share with relevant team leads.",
+        "priority": "medium",
+        "impact_horizon": "3-months",
+    })
+
 # ── Live Pipeline Progress (judges can watch this via /api/pipeline-status) ──
 PIPELINE_STATE: dict = {"stage": "idle", "progress": 0, "detail": ""}
 
@@ -432,6 +501,17 @@ async def run_pipeline() -> str:
         if sota_watch:
             logger.info(f"SOTA Watch: {len(sota_watch)} benchmark movements detected")
 
+        # ── Strategic Recommendations (v4.3) ──────────────────────────────
+        for f in new_findings:
+            rec = generate_recommendation(
+                title    = f.get("title", ""),
+                summary  = f.get("summary", ""),
+                category = f.get("category", ""),
+            )
+            f["recommendation"] = rec["recommendation"]
+            f["priority"]       = rec["priority"]
+            f["impact_horizon"] = rec["impact_horizon"]
+
         # ── Rank ───────────────────────────────────────────────────────────
         _set_stage("Ranking by Impact", 70, f"0.35×Relevance + 0.25×Novelty + 0.20×Credibility + 0.20×Actionability")
         ranked = rank_findings(new_findings)
@@ -461,6 +541,9 @@ async def run_pipeline() -> str:
                     change_status    = f.get("change_status", "new"),
                     previous_hash    = f.get("previous_hash"),
                     topic_cluster    = f.get("topic_cluster", "general"),
+                    recommendation   = f.get("recommendation"),
+                    priority         = f.get("priority", "medium"),
+                    impact_horizon   = f.get("impact_horizon", "short-term"),
                 ))
                 _try_persist_snapshot(db, f, run_id)
                 _try_update_source_meta(db, f)
