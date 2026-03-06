@@ -306,14 +306,30 @@ html, body, [class*="css"], .stApp {
 ═══════════════════════════════════════════════════ */
 /* Sidebar toggle: custom in-header chevron only */
 button[data-testid="baseButton-headerNoPadding"] { display: none !important; }
+[data-testid="stHeader"] button[aria-label*="sidebar" i],
+[data-testid="stHeader"] button[title*="sidebar" i],
+[data-testid="stHeader"] [data-testid="collapsedControl"],
+[data-testid="stHeader"] button[kind="header"] {
+  display: none !important;
+}
 button[aria-label="Close sidebar"],
 button[aria-label="Open sidebar"],
 button[aria-label="Enable sidebar"],
 button[aria-label="Collapse sidebar"],
+button[aria-label*="close sidebar" i],
+button[aria-label*="open sidebar" i],
+button[aria-label*="collapse sidebar" i],
+button[aria-label*="expand sidebar" i],
+button[title*="close sidebar" i],
+button[title*="open sidebar" i],
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarNavCollapseButton"],
 section[data-testid="stSidebar"] > div[data-testid="collapsedControl"],
 section[data-testid="stSidebar"] [data-testid="collapsedControl"],
 [data-testid="collapsedControl"] {
   display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 section[data-testid="stSidebar"],
@@ -958,7 +974,7 @@ if st.session_state.sidebar_compact:
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
-      margin: 4px 0 8px !important;
+      margin: 6px 0 10px !important;
     }
     [data-testid="stSidebar"] .stButton > button {
       width: 44px !important;
@@ -980,9 +996,9 @@ if st.session_state.sidebar_compact:
       border-color: #4476ff !important;
       transform: none !important;
     }
-    [data-testid="stSidebar"] .stRadio > div { padding: 0 7px !important; }
+    [data-testid="stSidebar"] .stRadio > div { padding: 0 10px !important; }
     [data-testid="stSidebar"] .stRadio label {
-      font-size: 22px !important;
+      font-size: 20px !important;
       line-height: 1 !important;
       font-weight: 500 !important;
       padding: 11px 0 !important;
@@ -993,7 +1009,10 @@ if st.session_state.sidebar_compact:
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: clip !important;
-      width: 100% !important;
+      width: 44px !important;
+      min-width: 44px !important;
+      max-width: 44px !important;
+      margin: 0 auto !important;
       box-sizing: border-box !important;
     }
     [data-testid="stSidebar"] .stRadio label:hover {
