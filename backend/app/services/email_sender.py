@@ -161,8 +161,9 @@ def _send_via_sendgrid(
             {"type": "text/plain", "value": text_body},
             {"type": "text/html",  "value": html_body},
         ],
-        "attachments": attachments,
     }
+    if attachments:
+        payload["attachments"] = attachments
 
     req = urllib.request.Request(
         "https://api.sendgrid.com/v3/mail/send",
