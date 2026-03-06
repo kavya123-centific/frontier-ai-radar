@@ -235,7 +235,7 @@ with st.sidebar:
                 Frontier AI Radar
             </div>
             <div style='font-size:11px;color:#9ca3af;margin-top:1px;'>
-                v4.2 · Intelligence Platform
+                Intelligence Platform
             </div>
         </div>
     </div>
@@ -331,7 +331,7 @@ if page == "📊 Dashboard":
     with col_logo:
         st.image("https://img.icons8.com/fluency/96/artificial-intelligence.png", width=52)
     with col_title:
-        st.title("Frontier AI Radar")
+        st.title("Triple Stack Radar")
         st.caption("Autonomous Multi-Agent Intelligence · Tracking frontier AI developments daily")
 
     status   = api_get("/api/status")
