@@ -3,21 +3,24 @@ email_sender.py
 ---------------
 Multi-provider email delivery with automatic fallback.
 
-Provider priority (set ONE block in .env):
+Provider priority (set ONE block in .env / Render environment variables):
 
-  1. Resend API (RECOMMENDED for hackathon / corporate networks)
-     Works through port 443 — never blocked by firewalls.
-     Free tier: 100 emails/day. Sign up at resend.com
+  1. SendGrid API (RECOMMENDED — sends to ANY email, no domain verification)
+     Free tier: 100 emails/day. Sign up at sendgrid.com
+       SENDGRID_API_KEY=SG.xxxxxxxxxxxx
+       SENDGRID_FROM=bandla.kavya@centific.com
+
+  2. Resend API (limited to own email on free plan without domain verification)
        RESEND_API_KEY=re_xxxxxxxxxxxx
-       RESEND_FROM=AI Radar <onboarding@resend.dev>   ← use this on free plan
+       RESEND_FROM=AI Radar <onboarding@resend.dev>
 
-  2. Office 365 / Outlook SMTP (if on Microsoft corporate network)
+  3. Office 365 / Outlook SMTP (if on Microsoft corporate network)
        SMTP_EMAIL=you@company.com
        SMTP_PASSWORD=your-password
        SMTP_HOST=smtp.office365.com
        SMTP_PORT=587
 
-  3. Gmail SMTP (home network only — blocked on most corporate Wi-Fi)
+  4. Gmail SMTP (home network only — blocked on most corporate Wi-Fi)
        SMTP_EMAIL=you@gmail.com
        SMTP_PASSWORD=16-char-app-password
        SMTP_HOST=smtp.gmail.com
@@ -27,11 +30,13 @@ Provider priority (set ONE block in .env):
 """
 
 import base64
+import json
 import logging
 import os
 import smtplib
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
-from turtle import st
 from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
@@ -40,6 +45,7 @@ logger = logging.getLogger(__name__)
 _PLACEHOLDERS = {
     "", "abcd", "abcdefghijklmnop", "password", "your-password",
     "xxxx-xxxx-xxxx-xxxx", "re_xxxxxxxxxxxx", "your-resend-key",
+    "sg.xxxxxxxxxxxx",
 }
 
 
@@ -78,18 +84,18 @@ def _build_text_body(findings: List[Dict[str, Any]]) -> str:
 
 
 def _build_html_body(findings: List[Dict[str, Any]]) -> str:
-    """Rich HTML email body for Resend."""
+    """Rich HTML email body."""
     rows = ""
     for i, f in enumerate(findings[:5], 1):
-        score   = f.get("final_score", 0) or 0
-        title   = f.get("title", "Untitled")
-        summary = (f.get("summary", "") or "")[:200]
-        why     = (f.get("why_matters", "") or "")[:150]
-        url     = f.get("source_url", "") or "#"
-        conf    = f.get("confidence_score", 0.8) or 0.8
-        cluster = f.get("topic_cluster", "general") or "general"
+        score    = f.get("final_score", 0) or 0
+        title    = f.get("title", "Untitled")
+        summary  = (f.get("summary", "") or "")[:200]
+        why      = (f.get("why_matters", "") or "")[:150]
+        url      = f.get("source_url", "") or "#"
+        conf     = f.get("confidence_score", 0.8) or 0.8
+        cluster  = f.get("topic_cluster", "general") or "general"
         evidence = f.get("evidence", "") or ""
-        color   = "#059669" if score >= 7 else "#d97706" if score >= 4 else "#6b7280"
+        color    = "#059669" if score >= 7 else "#d97706" if score >= 4 else "#6b7280"
         rows += f"""
         <tr>
           <td style="padding:16px;border-bottom:1px solid #e2e8f0;">
@@ -122,7 +128,64 @@ def _build_html_body(findings: List[Dict[str, Any]]) -> str:
     </body></html>"""
 
 
-# ── Provider 1: Resend API ─────────────────────────────────────────────────
+# ── Provider 1: SendGrid API ───────────────────────────────────────────────
+
+def _send_via_sendgrid(
+    api_key: str,
+    from_addr: str,
+    recipients: List[str],
+    subject: str,
+    html_body: str,
+    text_body: str,
+    pdf_path: str,
+) -> bool:
+    """
+    Send via SendGrid HTTP API (port 443).
+    Free tier: 100 emails/day to ANY email address — no domain verification needed.
+    """
+    attachments = []
+    if os.path.exists(pdf_path):
+        with open(pdf_path, "rb") as fh:
+            attachments = [{
+                "content":     base64.b64encode(fh.read()).decode(),
+                "filename":    "frontier_ai_radar_digest.pdf",
+                "type":        "application/pdf",
+                "disposition": "attachment",
+            }]
+
+    payload = {
+        "personalizations": [{"to": [{"email": r} for r in recipients]}],
+        "from":    {"email": from_addr},
+        "subject": subject,
+        "content": [
+            {"type": "text/plain", "value": text_body},
+            {"type": "text/html",  "value": html_body},
+        ],
+        "attachments": attachments,
+    }
+
+    req = urllib.request.Request(
+        "https://api.sendgrid.com/v3/mail/send",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type":  "application/json",
+        },
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=15)
+        logger.info(f"SendGrid: email sent successfully to {recipients}")
+        return True
+    except urllib.error.HTTPError as e:
+        logger.error(f"SendGrid error {e.code}: {e.read().decode()}")
+        return False
+    except Exception as e:
+        logger.error(f"SendGrid failed: {type(e).__name__}: {e}")
+        return False
+
+
+# ── Provider 2: Resend API ─────────────────────────────────────────────────
 
 def _send_via_resend(
     api_key: str,
@@ -134,49 +197,10 @@ def _send_via_resend(
     pdf_path: str,
 ) -> bool:
     """
-    Send via Resend HTTP API (port 443 — never blocked by corporate firewalls).
-    Supports PDF attachment via base64.
+    Send via Resend HTTP API (port 443).
+    NOTE: Free plan only sends to the account owner's email unless domain is verified.
     """
-    import json
-    try:
-        import httpx
-    except ImportError:
-        import urllib.request as _req
-        import urllib.error
-
-        # Fallback: use stdlib urllib if httpx not available
-        payload: Dict = {
-            "from":    from_addr,
-            "to":      recipients,
-            "subject": subject,
-            "html":    html_body,
-            "text":    text_body,
-        }
-        if os.path.exists(pdf_path):
-            with open(pdf_path, "rb") as fh:
-                payload["attachments"] = [{
-                    "filename": "frontier_ai_radar_digest.pdf",
-                    "content":  base64.b64encode(fh.read()).decode(),
-                }]
-
-        req = _req.Request(
-            "https://api.resend.com/emails",
-            data=json.dumps(payload).encode(),
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with _req.urlopen(req, timeout=15) as resp:
-                result = json.loads(resp.read())
-                logger.info(f"Resend: email sent, id={result.get('id')}")
-                return True
-        except urllib.error.HTTPError as e:
-            body = e.read().decode()
-            logger.error(f"Resend HTTP error {e.code}: {body}")
-            return False
-
-    # httpx path
-    payload = {
+    payload: Dict = {
         "from":    from_addr,
         "to":      recipients,
         "subject": subject,
@@ -190,22 +214,38 @@ def _send_via_resend(
                 "content":  base64.b64encode(fh.read()).decode(),
             }]
 
-    resp = httpx.post(
-        "https://api.resend.com/emails",
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=15.0,
-    )
-    if resp.status_code in (200, 201):
-        result = resp.json()
-        logger.info(f"Resend: email sent successfully, id={result.get('id')}")
-        return True
-    else:
-        logger.error(f"Resend error {resp.status_code}: {resp.text}")
-        return False
+    try:
+        import httpx
+        resp = httpx.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=15.0,
+        )
+        if resp.status_code in (200, 201):
+            logger.info(f"Resend: email sent successfully, id={resp.json().get('id')}")
+            return True
+        else:
+            logger.error(f"Resend error {resp.status_code}: {resp.text}")
+            return False
+    except ImportError:
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=json.dumps(payload).encode(),
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                result = json.loads(resp.read())
+                logger.info(f"Resend: email sent, id={result.get('id')}")
+                return True
+        except urllib.error.HTTPError as e:
+            logger.error(f"Resend HTTP error {e.code}: {e.read().decode()}")
+            return False
 
 
-# ── Provider 2: SMTP (Office365 STARTTLS or Gmail SSL) ────────────────────
+# ── Provider 3: SMTP (Office365 STARTTLS or Gmail SSL) ────────────────────
 
 def _send_via_smtp(
     smtp_email: str,
@@ -235,21 +275,16 @@ def _send_via_smtp(
 
     try:
         if smtp_port == 587:
-            # Office365 / STARTTLS
             with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as s:
-                s.ehlo()
-                s.starttls()
+                s.ehlo(); s.starttls()
                 s.login(smtp_email, smtp_password)
                 s.send_message(msg)
         else:
-            # Gmail SSL (port 465)
             with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15) as s:
                 s.login(smtp_email, smtp_password)
                 s.send_message(msg)
-
         logger.info(f"SMTP: email sent to {recipients}")
         return True
-
     except smtplib.SMTPAuthenticationError:
         logger.error("SMTP auth failed — check credentials / use App Password")
         return False
@@ -266,23 +301,31 @@ def send_digest_email(
     recipients: List[str],
 ) -> bool:
     """
-    Send digest email. Auto-selects provider from .env.
+    Send digest email. Auto-selects provider from environment variables.
     Never raises — email failure never aborts the pipeline.
     """
     if not recipients:
         logger.info("No email recipients configured — email skipped.")
         return False
 
-    subject    = f"🛰 Frontier AI Radar — {len(top_findings)} signals today"
-    text_body  = _build_text_body(top_findings)
-    html_body  = _build_html_body(top_findings)
+    subject   = f"🛰 Frontier AI Radar — {len(top_findings)} signals today"
+    text_body = _build_text_body(top_findings)
+    html_body = _build_html_body(top_findings)
 
-    # ── Provider 1: Resend API ─────────────────────────────────────────────
-    # resend_key  = os.getenv("RESEND_API_KEY", "").strip()
-    # resend_from = os.getenv("RESEND_FROM", "AI Radar <onboarding@resend.dev>").strip()
-    
-    resend_key = st.secrets.get("RESEND_API_KEY", "").strip()
-    resend_from = st.secrets.get("RESEND_FROM", "AI Radar <onboarding@resend.dev>").strip()
+    # ── Provider 1: SendGrid (sends to ANY email — recommended) ───────────
+    sendgrid_key  = os.getenv("SENDGRID_API_KEY", "").strip()
+    sendgrid_from = os.getenv("SENDGRID_FROM", "").strip()
+
+    if sendgrid_key and sendgrid_key.lower() not in _PLACEHOLDERS and sendgrid_from:
+        logger.info("Email: using SendGrid")
+        return _send_via_sendgrid(
+            sendgrid_key, sendgrid_from, recipients,
+            subject, html_body, text_body, pdf_path,
+        )
+
+    # ── Provider 2: Resend (free plan: own email only unless domain verified)
+    resend_key  = os.getenv("RESEND_API_KEY", "").strip()
+    resend_from = os.getenv("RESEND_FROM", "AI Radar <onboarding@resend.dev>").strip()
 
     if resend_key and resend_key not in _PLACEHOLDERS:
         logger.info("Email: using Resend API")
@@ -291,7 +334,7 @@ def send_digest_email(
             subject, html_body, text_body, pdf_path,
         )
 
-    # ── Provider 2: SMTP ──────────────────────────────────────────────────
+    # ── Provider 3: SMTP ──────────────────────────────────────────────────
     smtp_email    = os.getenv("SMTP_EMAIL", "").strip()
     smtp_password = os.getenv("SMTP_PASSWORD", "").strip()
     smtp_host     = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
@@ -307,6 +350,6 @@ def send_digest_email(
     # ── No provider configured ─────────────────────────────────────────────
     logger.info(
         "Email skipped — no provider configured. "
-        "Add RESEND_API_KEY or SMTP_EMAIL+SMTP_PASSWORD to .env to enable."
+        "Add SENDGRID_API_KEY+SENDGRID_FROM to Render environment variables to enable."
     )
     return False
