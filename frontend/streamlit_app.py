@@ -232,7 +232,7 @@ with st.sidebar:
         <span style='font-size:26px;'>🛰</span>
         <div>
             <div style='font-size:17px;color:#111827;font-weight:700;letter-spacing:-0.01em;'>
-                Frontier AI Radar
+                Triple Stack Radar
             </div>
             <div style='font-size:11px;color:#9ca3af;margin-top:1px;'>
                 Intelligence Platform

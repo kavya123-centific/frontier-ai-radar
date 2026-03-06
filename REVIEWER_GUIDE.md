@@ -1,176 +1,236 @@
-# 🛰 Frontier AI Radar — Reviewer & Judge Guide
+🛰 Triple Stack Radar — Reviewer & Judge Guide
 
-> **Two ways to review this project.**
-> Pick the one that suits your setup — both show the full system.
+Autonomous Multi-Agent Intelligence Platform 
 
----
+Two ways to review this project.
+Pick the one that suits your setup — both demonstrate the full system.
 
-## Option A — Run Locally (Full System, 5 Minutes)
+Option A — Live Demo (No Setup Required)
 
-### Step 1 — Prerequisites
-You need Python 3.10+ installed. Check with:
-```
+The full system is already deployed.
+
+Frontend: Streamlit Cloud
+Backend: Render (FastAPI)
+
+🌐 Frontend — Streamlit Dashboard
+
+Live URL
+
+https://frontier-ai-radar-qtphyvfsuw7w9ngqsvaagh.streamlit.app/
+
+Features available:
+
+All 12 dashboard pages active
+
+Trigger pipeline runs from UI
+
+Real findings generated live
+
+Observability metrics and run history
+
+⚙ Backend — Render API
+
+Render Project
+
+https://dashboard.render.com/project/prj-d6ktmnchg0os73ceadbg
+
+Capabilities:
+
+FastAPI backend
+
+22 REST endpoints
+
+Swagger UI available at /docs
+
+Persistent SQLite database
+
+Deployment Architecture
+Layer	Deployment
+Frontend	Streamlit Cloud — auto deploy from GitHub
+Backend	Render — FastAPI web service
+Database	SQLite (persistent disk on Render)
+LLM	OpenRouter / Anthropic
+Email	SendGrid (optional)
+Scheduler	APScheduler — daily run at 07:00 IST
+Option B — Run Locally (Full System ~5 Minutes)
+Step 1 — Prerequisites
+
+Install Python 3.10+
+
+Check version:
+
 python --version
-```
-If not installed → https://python.org/downloads
 
----
+If not installed:
 
-### Step 2 — Download & Extract
-1. Download `frontier-ai-radar-v4.2.zip`
-2. Extract it anywhere (e.g. Desktop)
-3. You'll get a folder called `frontier-ai-radar-v4.1`
+https://python.org/downloads
+Step 2 — Download & Extract
 
----
+Download the project ZIP
 
-### Step 3 — Configure API Key
-1. Go into the folder → open `backend/` folder
-2. Copy `.env.example` → rename copy to `.env`
-3. Open `.env` in Notepad and fill in ONE block:
+Extract it to any folder
 
-**Easiest (OpenRouter — free signup at openrouter.ai):**
-```
+Open a terminal inside the extracted folder
+
+Step 3 — Configure API Key
+
+Inside the backend/ folder:
+
+Copy .env.example
+
+Rename to .env
+
+Open .env and fill one block only
+
+Option A — OpenRouter (Easiest)
 LLM_API_KEY=your-key-here
 LLM_BASE_URL=https://openrouter.ai/api/v1
 LLM_MODEL=anthropic/claude-3.5-sonnet
-```
 
-**Already have Anthropic key:**
-```
+Signup:
+
+https://openrouter.ai
+Option B — Anthropic
 ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
 
-Leave everything else as-is. Email is optional — skip it.
+Email configuration is optional and can be skipped.
 
----
-
-### Step 4 — Install & Run (ONE command)
-
-Open a terminal in the extracted folder and run:
-
-**Windows:**
-```powershell
+Step 4 — Install & Run
+Windows
 pip install -r backend/requirements.txt
 python start.py
-```
-
-**Mac/Linux:**
-```bash
+Mac / Linux
 pip install -r backend/requirements.txt
 python start.py
-```
 
-`start.py` automatically:
-- Starts the FastAPI backend (port 8000)
-- Starts the Streamlit dashboard (port 8501)
-- Opens both in your browser
-- Shows you a health check
+start.py automatically:
 
----
+Starts FastAPI backend (port 8000)
 
-### Step 5 — Test the System
+Starts Streamlit dashboard (port 8501)
 
-Once running, open these URLs:
+Opens browser automatically
 
-| What | URL |
-|---|---|
-| 🖥 **Main Dashboard** | http://localhost:8501 |
-| 📡 **API + Swagger** | http://localhost:8000/docs |
-| 🗄 **DB Explorer** | http://localhost:8000/admin/db |
-| ❤ **Health Check** | http://localhost:8000/health |
+Runs system health checks
 
-**Test flow (3 minutes):**
-1. Open http://localhost:8501
-2. Click **⚙️ Sources** in sidebar → verify sources are listed
-3. Click **🚀 Trigger Manual Run** in sidebar
-4. Wait ~90 seconds (watch terminal for progress logs)
-5. Navigate to **🔍 Findings Explorer** → see ranked findings
-6. Navigate to **🔄 What Changed** → see NEW/UPDATED/UNCHANGED
-7. Navigate to **📁 Run History** → click **⬇️ Save PDF**
-8. Open http://localhost:8000/admin/db → browse the live database
-9. Open http://localhost:8000/docs → try any endpoint live
+Step 5 — Access the System
+Component	URL
+Dashboard	http://localhost:8501
 
----
+API Docs	http://localhost:8000/docs
 
-## Option B — View Live Demo (No Setup)
+Health Check	http://localhost:8000/health
+Quick Test Flow (3 Minutes)
 
-> **Live deployment on Streamlit Cloud:**
-> 🔗 **https://frontier-ai-radar.streamlit.app**
->
-> The live demo runs with a shared API key. All features are active.
-> Trigger a run directly from the UI and see real findings appear.
+Open
 
----
+http://localhost:8501
 
-## What to Evaluate
+Navigate to ⚙ Sources
 
-### Functional Requirements (per spec)
-| Requirement | How to verify |
-|---|---|
-| FR1 — Configurable sources | ⚙️ Sources page → add/remove URLs live |
-| FR2 — Multi-format extraction | Run logs show HTML + RSS feeds processed |
-| FR3 — Structured summaries | 🔍 Findings Explorer → expand any finding → see title, summary, why_matters, evidence, confidence |
-| FR4 — Dedup + clustering | Run log: `"Dedup: 9 input → 7 unique (2 removed across 3 layers)"` |
-| FR5 — PDF digest | 📁 Run History → ⬇️ Save PDF |
-| FR6 — Email delivery | Schedule page shows Resend status |
-| FR7 — Web UI | Full 9-page dashboard |
+Verify sources are listed.
 
-### Ranking Formula (spec section 14)
-```
-Impact = 0.35 × Relevance + 0.25 × Novelty + 0.20 × Credibility + 0.20 × Actionability
-```
-Visible on every finding card in the Findings Explorer.
+Click
 
-### Database (no tools needed)
-- Browser view: http://localhost:8000/admin/db
-- JSON export: http://localhost:8000/api/findings?limit=100
-- CSV export: http://localhost:8000/admin/db/export/findings
-- Schema: http://localhost:8000/admin/db/schema
+🚀 Trigger Run
 
-### API (22 endpoints)
-Full interactive Swagger UI: http://localhost:8000/docs
-Try any endpoint directly from the browser — no Postman needed.
+Wait ~90 seconds.
 
----
+Navigate to 🔍 Findings Explorer
 
-## Troubleshooting
+See ranked findings.
 
-**"No module named X"**
-```
-pip install -r backend/requirements.txt
-```
+Navigate to 🔄 What Changed
 
-**"Port already in use"**
-```
-# Kill whatever is using port 8000
-# Windows:
-netstat -ano | findstr :8000
-taskkill /PID <pid> /F
-```
+See:
 
-**"API error" in dashboard first 20 seconds**
-Normal — backend is starting up. Disappears automatically.
+NEW
 
-**Pipeline shows 0 findings**
-Check `.env` has a valid `LLM_API_KEY`. Without it, LLM extraction fails silently.
+UPDATED
 
-**Email not working**
-Expected — SMTP blocked on most corporate networks.
-Email is optional. PDF download works regardless.
+UNCHANGED signals
 
----
+Navigate to 📁 Run History
 
-## Architecture Summary
+Download the generated PDF digest.
 
-```
-4 Agents (parallel)          Pipeline              Output
-──────────────────    ─────────────────────    ──────────────
-Competitor Watcher  ─┐
-Model Provider      ─┤─→ 3-Layer Dedup ──→ Rank ──→ SQLite DB
-Research Scout      ─┤─→ Change Detect         ──→ PDF Digest
-HF Benchmark        ─┘─→ Topic Cluster         ──→ Email
-                          Entity Trends         ──→ Dashboard
-                          SOTA Watch            ──→ REST API
-```
+Open API docs
 
-**Tech stack:** FastAPI · SQLAlchemy · SQLite · httpx · BeautifulSoup · ReportLab · Streamlit · APScheduler · OpenRouter/Anthropic
+http://localhost:8000/docs
+
+Test endpoints directly from Swagger.
+
+What Reviewers Should Evaluate
+Functional Requirements
+Requirement	Verification
+FR1 — Configurable sources	⚙ Sources page → add/remove URLs
+FR2 — Multi-format extraction	Run logs show HTML + RSS processed
+FR3 — Structured summaries	Findings Explorer shows title, summary, why_matters, evidence
+FR4 — Deduplication & clustering	Run log shows multi-layer dedup
+FR5 — PDF digest	Run History → download PDF
+FR6 — Email delivery	Schedule page shows email provider status
+FR7 — Web UI	Full 12-page dashboard
+Ranking Formula
+
+Impact Score formula:
+
+Impact =
+0.35 × Relevance
++ 0.25 × Novelty
++ 0.20 × Credibility
++ 0.20 × Actionability
+
+Visible on every finding in the Findings Explorer.
+
+API — 22 Endpoints
+
+Interactive Swagger UI:
+
+Local
+
+http://localhost:8000/docs
+
+Render
+
+https://dashboard.render.com/project/prj-d6ktmnchg0os73ceadbg
+
+Endpoints can be tested directly in the browser.
+
+Troubleshooting
+Issue	Fix
+No module named X	Run pip install -r backend/requirements.txt
+Port already in use	Kill process using port 8000
+API error in dashboard	Wait ~20 seconds for backend startup
+Pipeline returns 0 findings	Ensure .env has valid LLM_API_KEY
+Email not working	Expected on corporate networks — SMTP blocked
+Architecture Summary
+Layer	Details
+Agents	Competitor Watcher · Model Provider · Research Scout · HF Benchmark
+Pipeline	Dedup → Change Detection → Topic Clustering → Entity Trends
+Output	SQLite DB · PDF Digest · Email · REST API · Dashboard
+Stack	FastAPI · SQLAlchemy · SQLite · Streamlit · APScheduler
+Extraction	httpx · BeautifulSoup
+LLM	OpenRouter / Anthropic
+Technology Stack
+
+FastAPI
+
+SQLAlchemy
+
+SQLite
+
+Streamlit
+
+APScheduler
+
+BeautifulSoup
+
+ReportLab
+
+OpenRouter / Anthropic
+
+🛰 Triple Stack Radar 
+
+Autonomous Multi-Agent Intelligence Platform
+
+FastAPI · SQLAlchemy · SQLite · Streamlit · APScheduler · OpenRouter · Anthropic

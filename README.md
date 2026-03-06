@@ -1,4 +1,4 @@
-# 🛰 Frontier AI Radar — v4.2
+# 🛰 Triple Stack Radar 
 
 > **Daily multi-agent AI intelligence system.**  
 > Tracks competitor releases, model launches, research publications, and benchmark updates.  
@@ -63,7 +63,7 @@ python start.py
                          │
               ┌──────────▼──────────┐
               │  PDF Digest         │  ReportLab, always generated
-              │  Email Delivery     │  Resend API (port 443) or SMTP
+              │  Email Delivery     │  Resend API (port 443) or SENDGRID
               │  Streamlit UI       │  8 pages
               │  REST API           │  22 endpoints + Swagger
               └─────────────────────┘
